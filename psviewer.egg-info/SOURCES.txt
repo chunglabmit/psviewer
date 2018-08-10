@@ -3,6 +3,7 @@ setup.py
 psviewer/__init__.py
 psviewer/main.py
 psviewer/raw.py
+psviewer/stitching.py
 psviewer/terastitcher.py
 psviewer.egg-info/PKG-INFO
 psviewer.egg-info/SOURCES.txt

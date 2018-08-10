@@ -1,3 +1,4 @@
 [console_scripts]
 psviewer = psviewer.main:main
+simple-stitcher = psviewer.stitching:main
 

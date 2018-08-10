@@ -20,19 +20,20 @@ ys = None
 xs = None
 fmt = None
 
-zstep = None
+zstep_small = None
+zstep_large = None
 pixel_width_um = None
 clim = None
 data_path = None
 img = None
 
 ax_img = None
-fig, ax = plt.subplots(figsize=(8, 8))
-plt.subplots_adjust(left=0.25, bottom=0.25)
-ax_cmin = plt.axes([0.25, 0.1, 0.65, 0.03])
-ax_cmax = plt.axes([0.25, 0.15, 0.65, 0.03])
+fig, ax = plt.subplots(figsize=(10, 10))
+plt.subplots_adjust(left=0.25, bottom=0.2)
+ax_cmin = plt.axes([0.25, 0.1, 0.65, 0.02])
+ax_cmax = plt.axes([0.25, 0.14, 0.65, 0.02])
 ax_auto = plt.axes([0.8, 0.025, 0.1, 0.04])
-ax_radio = plt.axes([0.025, 0.5, 0.15, 0.15])
+ax_radio = plt.axes([0.025, 0.5, 0.12, 0.12])
 slider_cmin = Slider(ax_cmin, 'Min Intensity', 0, 2**12-1, valinit=0, valstep=1, valfmt='%d')
 slider_cmax = Slider(ax_cmax, 'Max Intensity', 0, 2**12-1, valinit=1000, valstep=1, valfmt='%d')
 auto_btn = Button(ax_auto, 'Auto')
@@ -66,7 +67,7 @@ def adjust_cmax(event):
 def auto_adjust_clim(event):
     global clim
     cmin = img.min()
-    cmax = img.max()/2
+    cmax = img.max()
     if cmin < cmax:
         clim = [cmin, cmax]
         slider_cmin.set_val(cmin)
@@ -96,7 +97,17 @@ def plot_img():
         img = raw.raw_imread(img_path)
     width = pixel_width_um * img.shape[0]
     x_um, y_um, z_um = x/10, y/10, z/10
-    ax_img = ax.imshow(img, extent=[x_um, x_um+width, y_um+width, y_um], clim=clim, cmap='gray', interpolation='none')
+    extent = [x_um, x_um+width, y_um+width, y_um]
+    if ax_img is None:
+        ax_img = ax.imshow(img,
+                           extent=extent,
+                           clim=clim,
+                           cmap='gray',
+                           interpolation='none',
+                           animated=True)
+    else:
+        ax_img.set_data(img)
+        ax_img.set_extent([x_um, x_um+width, y_um+width, y_um])
     ax.set_title(f'{c}: z-slice ({z_idx+1}/{len(zs)}) {z_um} um')
     ax.set_xlabel(f'x-tile {x_idx+1} / {len(xs)}')
     ax.set_ylabel(f'y-tile {y_idx+1} / {len(ys)}')
@@ -105,31 +116,43 @@ def plot_img():
 
 def keypress(event):
     global c_idx, z_idx, y_idx, x_idx
-    if event.key == ',':
-        if z_idx >= zstep:
-            z_idx -= zstep
+    if event.key is ',':
+        if z_idx >= zstep_small:
+            z_idx -= zstep_small
         else:
             z_idx = 0
         plot_img()
-    elif event.key == '.':
-        if z_idx < len(zs)-zstep:
-            z_idx += zstep
+    elif event.key is '.':
+        if z_idx < len(zs)-zstep_small:
+            z_idx += zstep_small
         else:
             z_idx = len(zs)-1
         plot_img()
-    elif event.key == 'up':
+    elif event.key is 'pageup':
+        if z_idx >= zstep_large:
+            z_idx -= zstep_large
+        else:
+            z_idx = 0
+        plot_img()
+    elif event.key is 'pagedown':
+        if z_idx < len(zs)-zstep_large:
+            z_idx += zstep_large
+        else:
+            z_idx = len(zs)-1
+        plot_img()
+    elif event.key is 'up':
         if y_idx >= 1:
             y_idx -= 1
         plot_img()
-    elif event.key == 'down':
+    elif event.key is 'down':
         if y_idx < len(ys)-1:
             y_idx += 1
         plot_img()
-    elif event.key == 'left':
+    elif event.key is 'left':
         if x_idx >= 1:
             x_idx -= 1
         plot_img()
-    elif event.key == 'right':
+    elif event.key is 'right':
         if x_idx < len(xs)-1:
             x_idx += 1
         plot_img()
@@ -144,10 +167,11 @@ def keypress(event):
 
 
 def main():
-    global cs, zs, ys, xs, fmt, pixel_width_um, clim, data_path, zstep, radio_btn
+    global cs, zs, ys, xs, fmt, pixel_width_um, clim, data_path, zstep_small, zstep_large, radio_btn
     parser = argparse.ArgumentParser(description='Pre-stitcher viewer')
     parser.add_argument('--data-path', type=str, help='input path to unstitcher terastitcher volume', default='.')
-    parser.add_argument('--zstep', type=int, help='number of frames to move in z', default=100)
+    parser.add_argument('--zstep-large', type=int, help='number of frames to move in z in large step', default=50)
+    parser.add_argument('--zstep-small', type=int, help='number of frames to move in z in small step', default=5)
     parser.add_argument('--pixel-width', '-p', type=float, help='image pixel with in micron', default=1)
     parser.add_argument('--cmin', type=float, help='minimum of grayscale intensity display range', default=0)
     parser.add_argument('--cmax', type=float, help='maximum of grayscale intensity display range', default=1000)
@@ -156,7 +180,8 @@ def main():
     data_path = os.path.abspath(args.data_path)
     clim = [args.cmin, args.cmax]
     pixel_width_um = args.pixel_width
-    zstep = args.zstep
+    zstep_small = args.zstep_small
+    zstep_large = args.zstep_large
 
     fmt = ts.get_format(data_path)
     cs, zs, ys, xs = ts.get_czyx(data_path)

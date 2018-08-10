@@ -19,6 +19,7 @@ setup(
     packages=["psviewer"],
     entry_points={ 'console_scripts': [
         'psviewer=psviewer.main:main',
+        'simple-stitcher=psviewer.stitching:main'
     ]},
     url="https://github.com/chunglabmit/psviewer",
     license="MIT",
