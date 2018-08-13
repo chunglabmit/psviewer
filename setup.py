@@ -14,6 +14,7 @@ setup(
     install_requires=[
         "matplotlib",
         "scikit-image",
+        "tqdm"
     ],
     author="Kwanghun Chung Lab",
     packages=["psviewer"],
