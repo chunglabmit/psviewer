@@ -35,6 +35,10 @@ def find_colors(path):
     for folder in folders:
         if folder in [f'Color_{i}' for i in range(MAX_CHANNELS)]:
             colors.append(folder)
+    if len(colors) == 0:  # Add support for new naming convention
+        for folder in folders:
+            if folder in [f'Ex_{i}_Em_{i}' for i in range(MAX_CHANNELS)]:
+                colors.append(folder)
     return _check_empty_then_sort(colors)
 
 
